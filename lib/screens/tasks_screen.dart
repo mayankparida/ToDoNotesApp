@@ -17,13 +17,41 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Color grey = Color(0xFF8D8E98);
 
-  List<String> Tasks = ["Welcome to Tasks!", "Long press to delete a task"];
+  List<String> Tasks;
 
-  List<String> checkbox = ["0", "0"];
+  List<String> checkbox;
+
+  bool isloading = true;
+
+  int length;
+
+  void givedata() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setStringList("Tasks", Tasks);
+    prefs.setStringList("checkbox", checkbox);
+  }
+
+  void getdata() async {
+    setState(() {
+      isloading = true;
+    });
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Tasks = prefs.getStringList("Tasks");
+    checkbox = prefs.getStringList("checkbox");
+    if (Tasks == null) {
+      Tasks = ["Welcome to Tasks!", "Long press to delete a task"];
+      checkbox = ["0", "0"];
+    }
+    length = Tasks.length;
+    setState(() {
+      isloading = false;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    getdata();
   }
 
   @override
@@ -72,56 +100,59 @@ class _TasksScreenState extends State<TasksScreen> {
                 color: pink,
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: Tasks.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return Container(
-                    margin:
-                        EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ListTile(
-                        onLongPress: () async {
-                          setState(() {
-                            Tasks.removeAt(index);
-                            checkbox.removeAt(index);
-                          });
-                        },
-                        leading: Checkbox(
-                          value: checkbox[index] == "0" ? false : true,
-                          activeColor: Color(0xFFEB1555),
-                          onChanged: (value) {
-                            setState(() async {
-                              if (checkbox[index] == "0") {
-                                checkbox[index] = "1";
-                              } else {
-                                checkbox[index] = "0";
-                              }
-                            });
-                          },
-                        ),
-                        title: Text(
-                          Tasks[index],
-                          style: TextStyle(
-                              decoration:
-                                  (checkbox[index] == "0" ? false : true)
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                              fontWeight: FontWeight.bold,
-                              color: (checkbox[index] == "0" ? false : true)
-                                  ? Color(0xFF8D8E98)
-                                  : Colors.white),
-                        ),
-                      ),
+            isloading
+                ? Container()
+                : Expanded(
+                    child: ListView.builder(
+                      itemCount: length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return Container(
+                          margin: EdgeInsets.symmetric(
+                              horizontal: 15.0, vertical: 10.0),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ListTile(
+                              onLongPress: () async {
+                                setState(() {
+                                  Tasks.removeAt(index);
+                                  checkbox.removeAt(index);
+                                });
+                              },
+                              leading: Checkbox(
+                                value: checkbox[index] == "0" ? false : true,
+                                activeColor: Color(0xFFEB1555),
+                                onChanged: (value) {
+                                  setState(() {
+                                    if (checkbox[index] == "0") {
+                                      checkbox[index] = "1";
+                                    } else {
+                                      checkbox[index] = "0";
+                                    }
+                                  });
+                                },
+                              ),
+                              title: Text(
+                                Tasks[index],
+                                style: TextStyle(
+                                    decoration:
+                                        (checkbox[index] == "0" ? false : true)
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        (checkbox[index] == "0" ? false : true)
+                                            ? Color(0xFF8D8E98)
+                                            : Colors.white),
+                              ),
+                            ),
+                          ),
+                          decoration: BoxDecoration(
+                              color: Color(0xFF1D1E33),
+                              borderRadius: BorderRadius.circular(10.0)),
+                        );
+                      },
                     ),
-                    decoration: BoxDecoration(
-                        color: Color(0xFF1D1E33),
-                        borderRadius: BorderRadius.circular(10.0)),
-                  );
-                },
-              ),
-            )
+                  )
           ],
         ),
       ),
@@ -173,13 +204,14 @@ class _TasksScreenState extends State<TasksScreen> {
                         autofocus: true,
                         textAlign: TextAlign.center,
                       ),
-                      RaisedButton(
-                        onPressed: () async {
-                          setState(() {
+                      FlatButton(
+                        onPressed: () {
+                          this.setState(() {
                             Tasks.add(taskname);
                             checkbox.add("0");
+                            givedata();
+                            Navigator.pop(context);
                           });
-                          Navigator.pop(context);
                         },
                         color: Color(0xFF1D1E33),
                         child: Text(
